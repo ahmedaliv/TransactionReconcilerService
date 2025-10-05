@@ -8,7 +8,9 @@ import type {
     NormalizedTransaction,
     ReconciliationReport,
     MissingInInternalTransaction,
-    MissingInSourceTransaction
+    MissingInSourceTransaction,
+    Discrepancies,
+    MismatchedTransaction
 } from '../models/transaction.js';
 
 export class ReconciliationService {
@@ -75,11 +77,46 @@ export class ReconciliationService {
                 });
             }
         });
+        // Find mismatched transactions 
+        const mismatched_transactions: MismatchedTransaction[] = [];
 
+        sourceMap.forEach((sourceItem, id) => {
+            const systemItem = systemMap.get(id);
+
+            if (systemItem) {
+                const discrepancies: Discrepancies = {};
+
+                // Check amount mismatch
+                if (sourceItem.normalized.amount !== systemItem.normalized.amount) {
+                    discrepancies.amount = {
+                        source: sourceItem.normalized.amount,
+                        system: systemItem.normalized.amount
+                    };
+                }
+
+                // Check status mismatch
+                if (sourceItem.normalized.status !== systemItem.normalized.status) {
+                    discrepancies.status = {
+                        source: sourceItem.normalized.status,
+                        system: systemItem.normalized.status
+                    };
+                }
+
+                // Only include if there are discrepancies
+                if (Object.keys(discrepancies).length > 0) {
+                    mismatched_transactions.push({
+                        transactionId: id,
+                        discrepancies
+                    });
+                }
+            }
+        });
+
+        // Return the final reconciliation report
         return {
             missing_in_internal,
             missing_in_source,
-            mismatched_transactions: []  // Still empty for now
+            mismatched_transactions
         };
     }
 }
