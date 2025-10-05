@@ -112,3 +112,23 @@ function printSamples(report: ReconciliationReport): void {
     );
   }
 }
+
+async function main(): Promise<void> {
+  try {
+    console.log(chalk.cyan('🚀 Starting Transaction Reconciliation Service...\n'));
+
+    const { sourceTransactions, systemTransactions } = await readTransactions();
+    const report = runReconciliation(sourceTransactions, systemTransactions);
+
+    const outputPath = saveReport(report);
+    printSummary(report, sourceTransactions, systemTransactions);
+    printSamples(report);
+
+    console.log(chalk.green(`\n✅ Full detailed report saved to: ${outputPath}`));
+  } catch (error) {
+    console.error(chalk.red('❌ Error during reconciliation:'), error);
+    process.exit(1);
+  }
+}
+
+main();
