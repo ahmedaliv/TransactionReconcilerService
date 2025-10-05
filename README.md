@@ -19,7 +19,7 @@ cd TransactionReconcilerService
 
 2. Install dependencies:
 ```bash
-npm install
+npm install # Install all required dependencies
 ```
 
 This installs the required packages: `chalk` (terminal styling), `fast-csv` (CSV parsing), TypeScript, and type definitions.  
@@ -34,15 +34,25 @@ Place your CSV files in the `./data/` directory:
 
 **Production Mode:**
 ```bash
-npm run build
-npm start
+npm run build # Compile TypeScript to JavaScript
+npm start # Run the compiled code
 ```
 
 **Development Mode:**
-```bash
-npm run dev
+```bash 
+npm run dev # Run in development mode with ts-node
 ```  
+**Docker Support**
 
+```bash
+# Using npm scripts:
+npm run docker:build  # Build Docker image
+npm run docker:run    # Run with volume mounting
+
+# Or using raw Docker commands:
+docker build -t transaction-reconciler .  # Build image
+docker run -v ./output:/app/output -v ./data:/app/data:ro transaction-reconciler  # Run container
+```
 ### Output
 
 The service generates:

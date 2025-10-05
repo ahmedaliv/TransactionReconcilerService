@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "Reconciliation service that compares transactions from source and system CSV files, detects missing or mismatched records, and outputs a structured report.",
   "main": "index.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node --esm src/index.ts"
+    "dev": "ts-node --esm src/index.ts",
+    "docker:build": "docker build -t transaction-reconciler .",
+    "docker:run": "docker run -v ./output:/app/output -v ./data:/app/data:ro transaction-reconciler"
   },
   "repository": {
     "type": "git",
