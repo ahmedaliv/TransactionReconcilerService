@@ -21,8 +21,12 @@ cd TransactionReconcilerService
 ```bash
 npm install # Install all required dependencies
 ```
+Dependencies are declared in `package.json`. The most relevant runtime/dev packages are:
+- `fast-csv` — streaming CSV parsing
+- `chalk` — colored console output
+- `typescript` & `ts-node` — build/dev tooling
 
-This installs the required packages: `chalk` (terminal styling), `fast-csv` (CSV parsing), TypeScript, and type definitions.  
+See `package.json` for exact versions.
 
 ### Input Data Setup
 
@@ -121,70 +125,47 @@ The service generates:
 ```
 ## Technical Design Rationale
 
-### Architecture Overview
+Here's how I approached the implementation:  
 
-The service implements a four-layer architecture with clear separation of concerns:
-
-1. **Orchestration Layer** (`index.ts`): Coordinates workflow execution
-2. **Business Logic Layer** (`reconciliationService.ts`): Performs reconciliation
-3. **Data Ingestion Layer** (`csvReaders.ts`): Parses CSV files
-4. **Configuration Layer** (`constants.ts`): Manages file paths
-
-
-### Key Design Decisions
-
-#### 1. Map-Based Reconciliation Algorithm
-
-The service uses hash maps for O(1) lookup performance when matching transactions: 
-
-This enables efficient reconciliation even with large datasets by avoiding nested loops.
-
-#### 2. Normalization Strategy
-
-Heterogeneous transaction formats are normalized into a common schema with 5 key fields (`id`, `amount`, `currency`, `status`, `userId`) 
+### Architecture  
+  
+I split the code into four layers:  
+  
+- **Orchestration** (`index.ts`): Main workflow - read files, reconcile, save report  
+- **Business Logic** (`reconciliationService.ts`): The actual reconciliation algorithm  
+- **Data Ingestion** (`csvReaders.ts`): CSV parsing  
+- **Config** (`constants.ts`): File paths
 
 
-This isolates comparison logic from the full transaction schemas (16 fields for `SourceTransaction`, 11 for `SystemTransaction`).
-
-#### 3. Concurrent I/O Operations
-
-Both CSV files are read concurrently using `Promise.all()` to minimize total I/O time
-
-#### 4. Stream-Based Parsing
-
-The service uses Node.js streams via `fast-csv` for memory-efficient processing of large CSV files
-
-This prevents loading entire files into memory.
-
-### Discrepancy Detection
-
-The reconciliation engine detects three types of discrepancies:
-
-1. **Missing in Internal**: Source transactions not found in the system 
-2. **Missing in Source**: System transactions not found in the source 
-3. **Mismatched Transactions**: Transactions with field-level differences (amount or status) 
-
-## Code Review Notes
-
-### Strengths
-
-- **Type Safety**: Full TypeScript with explicit interfaces and compile-time checking
-
-- **Performance**: O(n) reconciliation algorithm using Map lookups vs naive O(n×m)
-
-- **Architecture**: Clean separation of concerns with four-layer design
-
-- **User Experience** : Dual JSON + console output with colors and summary tables
-
-- **Code Quality**: Modular functions with single responsibilities and clear naming
-
-
-
-### Potential Improvements
-- **Testing**: Add Jest unit tests for reconciliation service edge cases
-- **Configuration**: Support environment variables for file paths  
-- **Scalability**: Implement stream processing for larger datasets
-- **Error Handling**: Add validation for malformed CSV data and missing files
+### Technical Design 
+  
+### Why Map-Based Lookups?  
+I used `Map<string, Transaction>` for O(1) lookups instead of nested loops (which would be O(n×m)).
+  
+### Normalization  
+Source and system transactions have different schemas (16 vs 11 fields). I normalize both to 5 common fields (id, amount, currency, status, userId) before comparison to keep the logic simple.  
+  
+### Concurrent Reading  
+Reading both CSVs in parallel with `Promise.all()` cuts I/O time in half.  
+  
+### What Gets Detected  
+- **Missing in Internal**: Transactions in source but not in system  
+- **Missing in Source**: Transactions in system but not in source    
+- **Mismatched**: Same ID but different amount or status  
+  
+## Code Review Notes  
+  
+### What I'm Happy With  
+- TypeScript catches bugs at compile time  
+- Map lookups are way faster than nested loops    
+- Clean separation between reading CSVs and reconciliation logic  
+- Color-coded console output makes it easy to spot issues  
+  
+### What I'd Improve Next  
+- Stream-based processing for very large files (currently loads everything into memory)
+- Add unit tests (didn't have time for this task, but would test edge cases like duplicate IDs)  
+- Make file paths configurable via env vars (currently hardcoded in constants.ts)  
+- Better error messages for malformed CSV rows
 
 ## License
 
